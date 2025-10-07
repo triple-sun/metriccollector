@@ -3,64 +3,82 @@ package server
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
+
+	models "github.com/triple-sun/metriccollector/internal/model"
 )
 
 type MemStorage struct {
-	counters map[string]int64
-	gauges   map[string]float64
+	metrics []models.Metrics
 }
 
 type IMemStorage interface {
 	UpdateCounter(name string, value string) error
 	UpdateGauge(name string, value string) error
-	GetCounters() map[string]int64
-	GetGauges() map[string]float64
+	GetMetrics() []models.Metrics
 	GetMetricString() string
 }
 
 func NewMemStorage() *MemStorage {
 	return &MemStorage{
-		counters: make(map[string]int64),
-		gauges:   make(map[string]float64),
+		metrics: make([]models.Metrics, 0),
 	}
 }
 
 func (m *MemStorage) UpdateCounter(name string, value string) error {
-	converted, err := strconv.ParseInt(value, 10, 64)
-
-	if err != nil {
-		message := fmt.Sprintf("некорректный тип значения для типа Gauge: %s", err.Error())
-		return errors.New(message)
-	}
-
-	m.counters[name] += converted
-
-	return nil
-}
-
-func (m *MemStorage) UpdateGauge(name string, value string) error {
-	val, err := strconv.ParseFloat(value, 64)
+	parsed, err := strconv.ParseInt(value, 10, 64)
 
 	if err != nil {
 		message := fmt.Sprintf("некорректный тип значения для типа Counter: %s", err.Error())
 		return errors.New(message)
 	}
 
-	m.gauges[name] = val
+	index := slices.IndexFunc(m.metrics, func(metric models.Metrics) bool {
+		return metric.ID == name && metric.MType == models.Counter
+	})
+
+	if index == -1 {
+		newDelta := parsed
+		m.metrics = append(m.metrics, models.Metrics{ID: name, MType: models.Counter, Delta: &newDelta})
+	} else {
+		fmt.Printf("Найдена метрика %s: [%d]\n", name, index)
+
+		newDelta := parsed + *m.metrics[index].Delta
+		m.metrics[index].Delta = &newDelta
+	}
+
+	return nil
+}
+
+func (m *MemStorage) UpdateGauge(name string, value string) error {
+	parsed, err := strconv.ParseFloat(value, 64)
+
+	if err != nil {
+		message := fmt.Sprintf("некорректный тип значения для типа Gauge: %s", err.Error())
+		return errors.New(message)
+	}
+
+	index := slices.IndexFunc(m.metrics, func(metric models.Metrics) bool {
+		return metric.ID == name && metric.MType == models.Gauge
+	})
+
+	if index == -1 {
+		m.metrics = append(m.metrics, models.Metrics{ID: name, MType: models.Gauge, Value: &parsed})
+	} else {
+		fmt.Printf("Найдена метрика %s: [%d]\n", name, index)
+
+		m.metrics[index].Value = &parsed
+	}
 
 	return nil
 
 }
 
-func (m *MemStorage) GetCounters() map[string]int64 {
-	return m.counters
-}
-
-func (m *MemStorage) GetGauges() map[string]float64 {
-	return m.gauges
+func (m *MemStorage) GetMetrics() []models.Metrics {
+	return m.metrics
 }
 
 func (m *MemStorage) GetMetricString() string {
-	return fmt.Sprintf("Counters: %s, Gauges: %s", fmt.Sprint(m.counters), fmt.Sprint(m.gauges))
+	return fmt.Sprintf("Metrics: %s", fmt.Sprint(m.metrics))
 }
