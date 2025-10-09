@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"math/rand"
+	"net/http"
 	"runtime"
 	"strconv"
 	"time"
@@ -17,7 +18,7 @@ func main() {
 	pollCount := 0
 	reportInterval := 10
 
-	agent := agent.NewAgent()
+	agent := agent.NewAgent(http.DefaultClient, "https://localhost:8080")
 
 	for {
 		for {
