@@ -2,28 +2,33 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+
 	"github.com/triple-sun/metriccollector/internal/handler"
-	"github.com/triple-sun/metriccollector/internal/storage"
+	server "github.com/triple-sun/metriccollector/internal/storage"
 )
 
 func main() {
-	fmt.Println(`Запускаю приложение...`)
-	mux := http.NewServeMux()
-	fmt.Println(`Создан Mux`)
+	log.Println(`Запускаю приложение...`)
 	storage := server.NewMemStorage()
-	fmt.Println(`Создано хранилище`)
+	log.Println(`Создано хранилище`)
 
-	mux.HandleFunc(`/update/{metricType}/{metricName}/{metricValue}`, func(w http.ResponseWriter, r *http.Request) {
-		handler.HandleMetric(w, r, storage)
-	})
+	r := chi.NewRouter()
+	log.Println(`Создан Router`)
 
-	err := http.ListenAndServe(":8080", mux)
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 
-	if err != nil {
-		fmt.Println(`Ошибка запуска сервера`)
+	r.Post(`/update/{mtype}/{mname}/{mvalue}`, handler.MetricHandler(storage))
 
+	if err := http.ListenAndServe(":8080", r); err != nil {
+		log.Fatal(`Ошибка запуска сервера`)
 		panic(err)
 	}
 

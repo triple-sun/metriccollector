@@ -1,65 +1,71 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	models "github.com/triple-sun/metriccollector/internal/model"
 	storage "github.com/triple-sun/metriccollector/internal/storage"
 )
 
-func HandleMetric(w http.ResponseWriter, r *http.Request, storage storage.IMemStorage) {
-	if r.Method != http.MethodPost {
-		fmt.Println(`Метод отличается от POST`)
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
+func MetricHandler(storage storage.IMemStorage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var metric models.Metrics
 
-	metricType := r.PathValue("metricType")
-	metricName := r.PathValue("metricName")
-	metricValue := r.PathValue("metricValue")
+		mtype := r.PathValue("mtype")
+		mname := r.PathValue("mname")
+		mvalue := r.PathValue("mvalue")
 
-	if metricName == "" {
-		fmt.Printf(`Не найдено имя метрики`)
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	fmt.Printf("Получен запрос обновления метрики: %s, %s, %s\n", metricName, metricType, metricValue)
-
-	switch metricType {
-	case models.Gauge:
-		err := storage.UpdateGauge(metricName, metricValue)
-		if err != nil {
-			fmt.Printf(`Ошибка разбора значения метрики: %s\n`, err.Error())
-
-			w.WriteHeader(http.StatusBadRequest)
-
+		if mtype != models.Counter && mtype != models.Gauge {
+			http.Error(w, fmt.Sprintf(`Некорректный тип метрики: %s`, mtype), http.StatusBadRequest)
 			return
 		}
-	case models.Counter:
-		err := storage.UpdateCounter(metricName, metricValue)
-		if err != nil {
-			fmt.Printf(`Ошибка разбора значения метрики: %s`, err.Error())
 
-			w.WriteHeader(http.StatusBadRequest)
-
+		if mname == "" {
+			http.Error(w, `Не найдено имя метрики`, http.StatusNotFound)
 			return
 		}
-	default:
-		fmt.Printf(`Некорректный тип метрики: %s`, metricType)
-		w.WriteHeader(http.StatusBadRequest)
-		return
+
+		log.Printf("Получен запрос обновления метрики: Type: [%s]; ID: [%s]; Value: [%s]\n", mtype, mname, mvalue)
+
+		switch mtype {
+		case models.Gauge:
+			updated, err := storage.UpdateGauge(mname, mvalue)
+			if err != nil {
+				http.Error(w, fmt.Sprintf(`Ошибка разбора значения метрики: %s`, err.Error()), http.StatusBadRequest)
+				return
+			}
+
+			/** Назначаем ответ */
+			metric = updated
+		case models.Counter:
+			updated, err := storage.UpdateCounter(mname, mvalue)
+			if err != nil {
+				http.Error(w, fmt.Sprintf(`Ошибка разбора значения метрики: %s`, err.Error()), http.StatusBadRequest)
+				return
+			}
+			/** Назначаем ответ */
+			metric = updated
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+
+		resJson, encErr := json.Marshal(metric)
+
+		if encErr != nil {
+			http.Error(w, "ошибка преобразования в json", http.StatusInternalServerError)
+		}
+
+		_, writeErr := w.Write(resJson)
+
+		if writeErr != nil {
+			http.Error(w, "ошибка записи ответа", http.StatusInternalServerError)
+		}
+
+		w.WriteHeader(http.StatusOK)
+
+		log.Printf("Запрос обновления метрики обработан успешно!\n")
 	}
-
-	fmt.Printf("Метрики обновлены: %s \n", storage.GetMetricString())
-
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	// установим правильный заголовок для типа данных
-	// пока установим ответ-заглушку, без проверки ошибок
-	_, _ = w.Write([]byte(storage.GetMetricString()))
-
-	fmt.Printf("Запрос обновления метрики обработан успешно!")
-
 }
