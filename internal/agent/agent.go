@@ -9,19 +9,19 @@ import (
 
 type Agent struct {
 	Client  *http.Client
-	baseUrl string
+	baseURL string
 }
 
 type IAgent interface {
 	UpdateSingleMetric(mtype string, name string, value string) ([]byte, error)
 }
 
-func NewAgent(client *http.Client, baseUrl string) *Agent {
-	return &Agent{client, baseUrl}
+func NewAgent(client *http.Client, baseURL string) *Agent {
+	return &Agent{client, baseURL}
 }
 
 func (a *Agent) UpdateSingleMetric(mtype string, mname string, mvalue string) ([]byte, error) {
-	request, reqErr := http.NewRequest(http.MethodPost, a.baseUrl+"/update", nil)
+	request, reqErr := http.NewRequest(http.MethodPost, a.baseURL+"/update", nil)
 
 	if reqErr != nil {
 		return nil, fmt.Errorf(`не удалось создать запрос %s: %s`, mname, reqErr.Error())
@@ -37,6 +37,8 @@ func (a *Agent) UpdateSingleMetric(mtype string, mname string, mvalue string) ([
 	if err != nil {
 		return nil, fmt.Errorf(`не удалось обновить метрику %s: %s`, mname, err.Error())
 	}
+
+	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 

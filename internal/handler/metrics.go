@@ -52,13 +52,13 @@ func MetricHandler(storage storage.IMemStorage) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 
-		resJson, encErr := json.Marshal(metric)
+		resJSON, encErr := json.Marshal(metric)
 
 		if encErr != nil {
 			http.Error(w, "ошибка преобразования в json", http.StatusInternalServerError)
 		}
 
-		_, writeErr := w.Write(resJson)
+		_, writeErr := w.Write(resJSON)
 
 		if writeErr != nil {
 			http.Error(w, "ошибка записи ответа", http.StatusInternalServerError)
