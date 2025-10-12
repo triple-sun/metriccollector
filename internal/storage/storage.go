@@ -33,7 +33,8 @@ func (ms *MemStorage) UpdateMetrics(metrics models.Metrics) models.Metrics {
 		ms.metrics[metrics.ID] = metrics
 	} else {
 		if found.Delta != nil {
-			newDelta := *metrics.Delta + *found.Delta
+			oldDelta := *found.Delta
+			newDelta := oldDelta + *metrics.Delta
 			metrics.Delta = &newDelta
 		}
 

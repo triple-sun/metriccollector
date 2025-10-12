@@ -1,6 +1,9 @@
 package model
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 const (
 	Counter = "counter"
@@ -29,7 +32,7 @@ func (m Metrics) GetValue() string {
 	case Counter:
 		return fmt.Sprintf("%d; ", *m.Delta)
 	case Gauge:
-		return fmt.Sprintf("%f", *m.Value)
+		return strconv.FormatFloat(*m.Value, 'f', -1, 64)
 	default:
 		return ""
 	}

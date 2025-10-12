@@ -108,14 +108,6 @@ func MetricGetValueHandler(storage *storage.MemStorage) gin.HandlerFunc {
 			ctx.AbortWithError(http.StatusNotFound, findErr)
 		}
 
-		if metric.Delta != nil {
-			ctx.Data(200, "text/plain; charset=utf-8", fmt.Appendf(nil, "%d", *metric.Delta))
-			return
-		}
-
-		if metric.Value != nil {
-			ctx.Data(200, "text/plain; charset=utf-8", fmt.Appendf(nil, "%f", *metric.Value))
-			return
-		}
+		ctx.Data(200, "text/plain; charset=utf-8", []byte(metric.GetValue()))
 	}
 }
