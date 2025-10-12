@@ -1,91 +1,111 @@
-package server
+package storage
 
 import (
-	"errors"
 	"fmt"
 	"log"
-	"slices"
-	"strconv"
 
 	models "github.com/triple-sun/metriccollector/internal/model"
+	"github.com/triple-sun/metriccollector/internal/utils"
 )
 
 type MemStorage struct {
-	metrics []models.Metrics
+	metrics map[string]models.Metrics
 }
 
 type IMemStorage interface {
 	UpdateCounter(name string, value string) (models.Metrics, error)
 	UpdateGauge(name string, value string) (models.Metrics, error)
-	GetMetrics() []models.Metrics
+	UpdateMetrics(metrics models.Metrics) models.Metrics
+	GetMetrics() *map[string]models.Metrics
+	GetMetricsByName(mname string) (models.Metrics, error)
 }
 
 func NewMemStorage() *MemStorage {
 	return &MemStorage{
-		metrics: make([]models.Metrics, 0),
+		metrics: make(map[string]models.Metrics, 0),
 	}
 }
 
-func (m *MemStorage) UpdateCounter(mname string, mvalue string) (models.Metrics, error) {
-	parsed, err := strconv.ParseInt(mvalue, 10, 64)
+func (ms *MemStorage) UpdateMetrics(metrics models.Metrics) models.Metrics {
+	found, ok := ms.metrics[metrics.ID]
 
-	if err != nil {
-		message := fmt.Sprintf("некорректный тип значения для типа Counter: %s", err.Error())
-		return models.Metrics{}, errors.New(message)
+	if !ok {
+		ms.metrics[metrics.ID] = metrics
+	} else {
+		if found.Delta != nil {
+			newDelta := *metrics.Delta + *found.Delta
+			metrics.Delta = &newDelta
+		}
+
+		ms.metrics[metrics.ID] = metrics
 	}
 
-	index := slices.IndexFunc(m.metrics, func(metric models.Metrics) bool {
-		return metric.ID == mname && metric.MType == models.Counter
-	})
+	return ms.metrics[metrics.ID]
+}
 
-	if index == -1 {
+func (ms *MemStorage) UpdateCounter(mname string, mvalue string) (models.Metrics, error) {
+	parsed, err := utils.ParseCounterValue(mvalue)
+
+	if err != nil {
+		return models.Metrics{}, err
+	}
+
+	found, ok := ms.metrics[mname]
+
+	if !ok {
 		newDelta := parsed
-		newMetric := models.Metrics{ID: mname, MType: models.Counter, Delta: &newDelta}
-		m.metrics = append(m.metrics, newMetric)
+		ms.metrics[mname] = models.Metrics{ID: mname, MType: models.Counter, Delta: &newDelta}
 
 		log.Printf("Добавлена метрика %s\n", mname)
 
-		return newMetric, nil
+		return ms.metrics[mname], nil
 	} else {
-		log.Printf("Найдена метрика %s: [%d]\n", mname, index)
+		log.Printf("Найдена метрика %s \n", mname)
 
-		newDelta := parsed + *m.metrics[index].Delta
-		m.metrics[index].Delta = &newDelta
-		return m.metrics[index], nil
+		newDelta := parsed + *found.Delta
+		found.Delta = &newDelta
 
+		log.Printf("Обновлена метрика %s \n", mname)
+
+		return found, nil
 	}
-
 }
 
-func (m *MemStorage) UpdateGauge(mname string, mvalue string) (models.Metrics, error) {
-	parsed, err := strconv.ParseFloat(mvalue, 64)
+func (ms *MemStorage) UpdateGauge(mname string, mvalue string) (models.Metrics, error) {
+	parsed, err := utils.ParseGaugeValue(mvalue)
 
 	if err != nil {
-		message := fmt.Sprintf("некорректный тип значения для типа Gauge: %s", err.Error())
-		return models.Metrics{}, errors.New(message)
+		return models.Metrics{}, err
 	}
 
-	index := slices.IndexFunc(m.metrics, func(metric models.Metrics) bool {
-		return metric.ID == mname && metric.MType == models.Gauge
-	})
+	found, ok := ms.metrics[mname]
 
-	if index == -1 {
-		newMetric := models.Metrics{ID: mname, MType: models.Gauge, Value: &parsed}
-		m.metrics = append(m.metrics, newMetric)
+	if !ok {
+		ms.metrics[mname] = models.Metrics{ID: mname, MType: models.Gauge, Value: &parsed}
 
 		log.Printf("Добавлена метрика %s\n", mname)
 
-		return newMetric, nil
+		return ms.metrics[mname], nil
 
 	} else {
-		log.Printf("Найдена метрика %s: [%d]\n", mname, index)
+		log.Printf("Найдена метрика %s\n", mname)
 
-		m.metrics[index].Value = &parsed
+		found.Value = &parsed
 
-		return m.metrics[index], nil
+		return found, nil
 	}
 }
 
-func (m *MemStorage) GetMetrics() []models.Metrics {
-	return m.metrics
+func (ms *MemStorage) GetMetrics() *map[string]models.Metrics {
+	return &ms.metrics
+}
+
+func (ms *MemStorage) GetMetricsByName(mname string) (models.Metrics, error) {
+	found, ok := ms.metrics[mname]
+
+	if !ok {
+		return models.Metrics{}, fmt.Errorf("метрика %s не найдена", mname)
+	}
+
+	return found, nil
 }

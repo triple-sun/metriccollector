@@ -1,9 +1,7 @@
-package server_test
+package storage
 
 import (
 	"testing"
-
-	server "github.com/triple-sun/metriccollector/internal/storage"
 )
 
 func TestMemStorage_UpdateCounter(t *testing.T) {
@@ -19,7 +17,7 @@ func TestMemStorage_UpdateCounter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := server.NewMemStorage()
+			m := NewMemStorage()
 			got, gotErr := m.UpdateCounter(tt.mname, tt.mvalue)
 			if gotErr != nil {
 				if !tt.wantErr {
@@ -51,7 +49,7 @@ func TestMemStorage_UpdateGauge(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := server.NewMemStorage()
+			m := NewMemStorage()
 			got, gotErr := m.UpdateGauge(tt.mname, tt.mvalue)
 			if gotErr != nil {
 				if !tt.wantErr {

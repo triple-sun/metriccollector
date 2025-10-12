@@ -1,4 +1,4 @@
-package models
+package model
 
 import "fmt"
 
@@ -20,13 +20,17 @@ type Metrics struct {
 	Hash  string   `json:"hash,omitempty"`
 }
 
-func (m Metrics) String() string {
+type IMetrics interface {
+	GetValue() string
+}
+
+func (m Metrics) GetValue() string {
 	switch m.MType {
 	case Counter:
-		return fmt.Sprintf("ID: %s, Type: %s, Delta: %d; ", m.ID, m.MType, *m.Delta)
+		return fmt.Sprintf("%d; ", *m.Delta)
 	case Gauge:
-		return fmt.Sprintf("ID: %s, Type: %s, Value: %f; ", m.ID, m.MType, *m.Value)
+		return fmt.Sprintf("%f", *m.Value)
 	default:
-		return fmt.Sprintf("ID: %s, Type: %s", m.ID, m.MType)
+		return ""
 	}
 }
