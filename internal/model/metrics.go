@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"strconv"
 )
 
@@ -30,7 +29,7 @@ type IMetrics interface {
 func (m Metrics) GetValue() string {
 	switch m.MType {
 	case Counter:
-		return fmt.Sprintf("%d; ", *m.Delta)
+		return strconv.FormatInt(*m.Delta, 10)
 	case Gauge:
 		return strconv.FormatFloat(*m.Value, 'f', -1, 64)
 	default:
