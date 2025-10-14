@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,6 +11,11 @@ import (
 )
 
 func main() {
+	var addr string
+
+	flag.StringVar(&addr, "a", "localhost:8080", "Адрес в формате host:port")
+	flag.Parse()
+
 	log.Println(`Запускаю приложение...`)
 	storage := storage.NewMemStorage()
 	log.Println(`Создано хранилище`)
@@ -21,5 +27,5 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println(`Сервер запущен!`)
+	fmt.Printf(`Сервер запущен по адресу %s!`, addr)
 }

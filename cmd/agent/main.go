@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"math/rand"
 	"runtime"
@@ -15,21 +17,31 @@ import (
 func main() {
 	var stats runtime.MemStats
 
-	pollInterval := 2
-	pollCount := 0
-	reportInterval := 10
+	var addr string
+	var pInterval int
+	var rInterval int
 
-	client := resty.New().SetBaseURL("http://localhost:8080")
+	pCount := 0
+
+	flag.StringVar(&addr, "a", "localhost:8080", "Адрес в формате host:port")
+	flag.IntVar(&pInterval, "p", 2, "Интервал сбора метрик в секундах")
+	flag.IntVar(&rInterval, "r", 10, "Интервал отправки метрик в секундах")
+
+	flag.Parse()
+
+	client := resty.New().SetBaseURL(fmt.Sprintf("http://%s", addr))
+
+	log.Printf(`Запущен агент отправки метрик. Адрес: %s, интервал сбора: %dс, интервал отправки: %dс`, addr, pInterval, rInterval)
 
 	for {
 		for {
-			pollCount += 1
+			pCount += 1
 			runtime.ReadMemStats(&stats)
 			log.Println(`Метрики прочитаны!`)
 
-			if pollCount%(reportInterval/2) == 0 {
+			if pCount%(rInterval/2) == 0 {
 				for mname, params := range map[string]agent.MetricsParams{
-					"PollCount":     {MType: "counter", Value: strconv.Itoa(pollCount)},
+					"PollCount":     {MType: "counter", Value: strconv.Itoa(pCount)},
 					"RandomValue":   {MType: "gauge", Value: strconv.Itoa(rand.Intn(1000))},
 					"Alloc":         {MType: "gauge", Value: strconv.FormatUint(stats.Alloc, 10)},
 					"BuckHashSys":   {MType: "gauge", Value: strconv.FormatUint(stats.BuckHashSys, 10)},
@@ -65,7 +77,7 @@ func main() {
 				log.Println(`Метрики отправлены!`)
 			}
 
-			time.Sleep(time.Duration(pollInterval) * time.Second)
+			time.Sleep(time.Duration(pInterval) * time.Second)
 		}
 
 	}
