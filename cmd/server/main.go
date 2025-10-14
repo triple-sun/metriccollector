@@ -22,7 +22,7 @@ func main() {
 	r := router.Setup(storage)
 	log.Println(`Создан Router`)
 
-	if err := http.ListenAndServe(":8080", r); err != nil {
+	if err := http.ListenAndServe(addr, r); err != nil {
 		log.Fatal(`Ошибка запуска сервера`)
 		panic(err)
 	}
