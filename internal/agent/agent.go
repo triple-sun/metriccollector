@@ -19,7 +19,7 @@ func UpdateSingleMetric(client *resty.Client, mtype string, mname string, mvalue
 
 	log.Printf(`Обновляю метрику %s типа %s: %s`, mname, mtype, mvalue)
 
-	req := resty.New().R().SetPathParams(map[string]string{
+	req := client.R().SetPathParams(map[string]string{
 		"mtype": mtype, "mvalue": mvalue, "mname": mname,
 	}).SetResult(&response).SetError(&responseErr)
 

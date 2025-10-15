@@ -22,7 +22,7 @@ type Metrics struct {
 	Hash  string   `json:"hash,omitempty"`
 }
 
-type IMetrics interface {
+type MetricsModel interface {
 	GetValue() string
 }
 

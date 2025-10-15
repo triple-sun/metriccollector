@@ -12,7 +12,7 @@ type MemStorage struct {
 	metrics map[string]models.Metrics
 }
 
-type IMemStorage interface {
+type MemStorageRepository interface {
 	UpdateCounter(name string, value string) (models.Metrics, error)
 	UpdateGauge(name string, value string) (models.Metrics, error)
 	UpdateMetrics(metrics models.Metrics) models.Metrics

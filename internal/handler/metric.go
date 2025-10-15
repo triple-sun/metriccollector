@@ -28,7 +28,7 @@ func GetAllMetricsHandler(storage *storage.MemStorage) gin.HandlerFunc {
 	}
 }
 
-func MetricUpdateHandler(storage storage.IMemStorage) gin.HandlerFunc {
+func MetricUpdateHandler(storage storage.MemStorageRepository) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		//var response responses.MetricUpdateResponse
 
