@@ -15,7 +15,7 @@ import (
 
 func TestAgent_UpdateSingleMetric(t *testing.T) {
 	testStorage := storage.NewMemStorage()
-	testRouter := router.Setup(testStorage)
+	testRouter := router.SetupRoutes(testStorage)
 
 	srv := httptest.NewServer(testRouter)
 	defer srv.Close()

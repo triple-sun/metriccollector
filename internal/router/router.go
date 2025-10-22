@@ -1,8 +1,6 @@
 package router
 
 import (
-	"log"
-
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 
@@ -11,10 +9,8 @@ import (
 	"github.com/triple-sun/metriccollector/internal/storage"
 )
 
-func Setup(storage *storage.MemStorage) *gin.Engine {
-
+func SetupRoutes(storage *storage.MemStorage) *gin.Engine {
 	r := gin.Default()
-	log.Println(`Создан Router`)
 
 	r.HandleMethodNotAllowed = true
 

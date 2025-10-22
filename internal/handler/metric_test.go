@@ -15,7 +15,7 @@ import (
 
 func TestMetricUpdateHandler(t *testing.T) {
 	testStorage := storage.NewMemStorage()
-	r := router.Setup(testStorage)
+	r := router.SetupRoutes(testStorage)
 
 	tests := []struct {
 		name string // description of this test case
@@ -56,7 +56,7 @@ func TestGetAllMetricsHandler(t *testing.T) {
 	testStorage := storage.NewMemStorage()
 	testStorage.UpdateMetrics(testMetrics)
 
-	r := router.Setup(testStorage)
+	r := router.SetupRoutes(testStorage)
 
 	tests := []struct {
 		name string // description of this test case
