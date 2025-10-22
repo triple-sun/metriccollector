@@ -10,7 +10,7 @@ import (
 
 func TestMetrics_GetValue(t *testing.T) {
 	var testDelta int64 = 123
-	var testValue float64 = 12.3
+	var testValue = 12.3
 
 	tests := []struct {
 		name   string // description of this test case

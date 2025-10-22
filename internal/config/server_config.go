@@ -8,7 +8,7 @@ import (
 )
 
 type ServerConfig struct {
-	Address string `env:ADDRESS`
+	Address string `env:"ADDRESS"`
 }
 
 func ParseServerFlags(address *string) {

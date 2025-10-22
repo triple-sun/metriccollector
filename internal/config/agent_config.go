@@ -8,9 +8,9 @@ import (
 )
 
 type AgentConfig struct {
-	Address        string `env:ADDRESS`
-	ReportInterval int    `env:REPORT_INTERVAL`
-	PollInterval   int    `env:POLL_INTERVAL`
+	Address        string `env:"ADDRESS"`
+	ReportInterval int    `env:"REPORT_INTERVAL"`
+	PollInterval   int    `env:"POLL_INTERVAL"`
 }
 
 func ParseAgentFlags(address *string, pInterval *int, rInterval *int) {
