@@ -1,7 +1,6 @@
 package router
 
 import (
-	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 
 	"github.com/triple-sun/metriccollector/internal/handler"
@@ -14,10 +13,9 @@ func SetupRoutes(storage *storage.MemStorage) *gin.Engine {
 
 	r.HandleMethodNotAllowed = true
 
-	r.Use(gin.Logger())
-	r.Use(gin.Recovery())
-	r.Use(requestid.New())
+	r.Use(middleware.ResponseLogger())
 	r.Use(middleware.ErrorHandler())
+	r.Use(middleware.RequestLogger())
 
 	r.GET("/", handler.GetAllMetricsHandler(storage))
 	r.GET("/value/:mtype/:mname", handler.MetricGetValueHandler(storage))
