@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"math/rand"
@@ -12,27 +11,28 @@ import (
 	"resty.dev/v3"
 
 	"github.com/triple-sun/metriccollector/internal/agent"
+	"github.com/triple-sun/metriccollector/internal/config"
 )
 
 func main() {
 	var stats runtime.MemStats
+	var cfg config.AgentConfig
 
-	var addr string
+	var address string
 	var pInterval int
 	var rInterval int
 
+	// Аргументы и переменные окружения
+	config.ParseAgentFlags(&address, &pInterval, &rInterval)
+	config.ParseAgentEnv(&cfg, &address, &pInterval, &rInterval)
+
+	client := resty.New().SetBaseURL(fmt.Sprintf("http://%s", address))
+
 	pCount := 0
-
-	flag.StringVar(&addr, "a", "localhost:8080", "Адрес в формате host:port")
-	flag.IntVar(&pInterval, "p", 2, "Интервал сбора метрик в секундах")
-	flag.IntVar(&rInterval, "r", 10, "Интервал отправки метрик в секундах")
-	flag.Parse()
-
-	client := resty.New().SetBaseURL(fmt.Sprintf("http://%s", addr))
 	pTicker := time.NewTicker(time.Duration(pInterval) * time.Second)
 	defer pTicker.Stop()
 
-	log.Printf(`Запущен агент отправки метрик. Адрес: %s, интервал сбора: %dс, интервал отправки: %dс`, addr, pInterval, rInterval)
+	log.Printf(`Запущен агент отправки метрик. Адрес: %s, интервал сбора: %dс, интервал отправки: %dс`, address, pInterval, rInterval)
 
 	for range pTicker.C {
 		pCount += 1
