@@ -20,6 +20,12 @@ func TestAgent_UpdateSingleMetric(t *testing.T) {
 	srv := httptest.NewServer(testRouter)
 	defer srv.Close()
 
+	type body struct {
+		ID    string  `json:"id"`
+		MType string  `json:"type"`
+		Value float64 `json:"value"`
+	}
+
 	testCases := []struct {
 		method       string
 		expectedCode int
@@ -36,8 +42,7 @@ func TestAgent_UpdateSingleMetric(t *testing.T) {
 			// который хранится в поле URL соответствующей структуры
 			req := resty.New().R().
 				SetMethod(tc.method).
-				SetURL(srv.URL + "/update/counter/TestCounter/1").
-				SetBody(`"success":false, "message":"ibama"`).
+				SetURL(srv.URL + "/update").SetBody(body{ID: "TestID", MType: "gauge", Value: 1}).
 				SetResult(&responses.MetricUpdateResponse{})
 
 			res, err := req.Send()

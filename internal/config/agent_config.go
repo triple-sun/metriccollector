@@ -22,6 +22,7 @@ func ParseAgentFlags(address *string, pInterval *int, rInterval *int) {
 
 func ParseAgentEnv(config *AgentConfig, address *string, pInterval *int, rInterval *int) {
 	envErr := env.Parse(config)
+	
 	if envErr != nil {
 		log.Fatal(envErr)
 	}

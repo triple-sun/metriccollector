@@ -18,9 +18,8 @@ func SetupRoutes(storage *storage.MemStorage) *gin.Engine {
 	r.Use(middleware.RequestLogger())
 
 	r.GET("/", handler.GetAllMetricsHandler(storage))
-	r.GET("/value/:mtype/:mname", handler.MetricGetValueHandler(storage))
-
-	r.POST("/update/:mtype/:mname/:mvalue", handler.MetricUpdateHandler(storage))
+	r.POST("/value", handler.MetricGetValueHandler(storage))
+	r.POST("/update", handler.MetricUpdateHandler(storage))
 
 	return r
 }

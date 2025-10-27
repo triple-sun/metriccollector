@@ -5,30 +5,44 @@ import (
 
 	"resty.dev/v3"
 
+	"github.com/triple-sun/metriccollector/internal/model"
 	"github.com/triple-sun/metriccollector/internal/responses"
 )
 
-type MetricsParams struct {
+type MetricUpdateParams struct {
+	ID    string
 	MType string
-	Value string
+	Value float64
+	Delta int64
 }
 
-func UpdateSingleMetric(client *resty.Client, mtype string, mname string, mvalue string) {
+func UpdateMetric(client *resty.Client, params MetricUpdateParams) {
 	var response responses.MetricUpdateResponse
 	var responseErr responses.ErrorResponse
 
-	log.Printf(`Обновляю метрику %s типа %s: %s`, mname, mtype, mvalue)
+	log.Printf(`Обновляю метрику %s типа %s`, params.ID, params.MType)
 
-	req := client.R().SetPathParams(map[string]string{
-		"mtype": mtype, "mvalue": mvalue, "mname": mname,
-	}).SetResult(&response).SetError(&responseErr)
+	var body model.Metrics
 
-	res, err := req.Post(client.BaseURL() + "/update/{mtype}/{mname}/{mvalue}")
+	switch params.MType {
+	case model.Counter:
+		{
+			body = model.Metrics{ID: params.ID, MType: params.MType, Delta: &params.Delta}
+		}
+	case model.Gauge:
+		{
+			body = model.Metrics{ID: params.ID, MType: params.MType, Value: &params.Value}
+		}
+	}
+
+	req := client.R().SetBody(body).SetResult(&response).SetError(&responseErr)
+
+	res, err := req.Post(client.BaseURL() + "/update")
 
 	if err != nil {
-		log.Printf("ошибка обновления метрики %s: %s", mname, err.Error())
+		log.Printf("ошибка обновления метрики %s: %s", params.ID, err.Error())
 		return
 	}
 
-	log.Printf("метрика %s отправлена: %v", mname, res)
+	log.Printf("метрика %s отправлена: %v", params.ID, res)
 }
