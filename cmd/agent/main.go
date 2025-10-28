@@ -11,6 +11,7 @@ import (
 
 	"github.com/triple-sun/metriccollector/internal/agent"
 	"github.com/triple-sun/metriccollector/internal/config"
+	"github.com/triple-sun/metriccollector/internal/logger"
 )
 
 func main() {
@@ -70,7 +71,19 @@ func main() {
 				{ID: "Sys", MType: "gauge", Value: float64(stats.Sys)},
 				{ID: "TotalAlloc", MType: "gauge", Value: float64(stats.TotalAlloc)},
 			} {
-				agent.UpdateMetric(client, params)
+				log.Printf(`Обновляю метрику %s типа %s`, params.ID, params.MType)
+
+				req, err := agent.GetUpdateMetricRequest(client, params)
+
+				if err != nil {
+					logger.Log.Err(err).Msgf("ошибка создания запроса обновления метрики %s: %s", params.ID, err.Error())
+				}
+
+				if res, err := req.Post(client.BaseURL() + "/update"); err != nil {
+					logger.Log.Err(err).Msgf("ошибка обновления метрики %s: %s", params.ID, err.Error())
+				} else {
+					logger.Log.Info().Msgf("метрика %s отправлена: %v", params.ID, res)
+				}
 			}
 
 			log.Println(`Метрики отправлены!`)

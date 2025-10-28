@@ -1,7 +1,7 @@
 package agent
 
 import (
-	"log"
+	"encoding/json"
 
 	"resty.dev/v3"
 
@@ -16,33 +16,28 @@ type MetricUpdateParams struct {
 	Delta int64
 }
 
-func UpdateMetric(client *resty.Client, params MetricUpdateParams) {
+func GetUpdateMetricRequest(client *resty.Client, params MetricUpdateParams) (*resty.Request, error) {
 	var response responses.MetricUpdateResponse
 	var responseErr responses.ErrorResponse
 
-	log.Printf(`Обновляю метрику %s типа %s`, params.ID, params.MType)
-
-	var body model.Metrics
+	var data model.Metrics
 
 	switch params.MType {
 	case model.Counter:
 		{
-			body = model.Metrics{ID: params.ID, MType: params.MType, Delta: &params.Delta}
+			data = model.Metrics{ID: params.ID, MType: params.MType, Delta: &params.Delta}
 		}
 	case model.Gauge:
 		{
-			body = model.Metrics{ID: params.ID, MType: params.MType, Value: &params.Value}
+			data = model.Metrics{ID: params.ID, MType: params.MType, Value: &params.Value}
 		}
 	}
 
-	req := client.R().SetBody(body).SetResult(&response).SetError(&responseErr)
-
-	res, err := req.Post(client.BaseURL() + "/update")
+	body, err := json.Marshal(data)
 
 	if err != nil {
-		log.Printf("ошибка обновления метрики %s: %s", params.ID, err.Error())
-		return
+		return nil, err
 	}
 
-	log.Printf("метрика %s отправлена: %v", params.ID, res)
+	return client.R().SetBody(body).SetResult(&response).SetError(&responseErr), nil
 }
