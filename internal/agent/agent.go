@@ -1,34 +1,43 @@
 package agent
 
 import (
-	"log"
+	"encoding/json"
 
 	"resty.dev/v3"
 
+	"github.com/triple-sun/metriccollector/internal/model"
 	"github.com/triple-sun/metriccollector/internal/responses"
 )
 
-type MetricsParams struct {
+type MetricUpdateParams struct {
+	ID    string
 	MType string
-	Value string
+	Value float64
+	Delta int64
 }
 
-func UpdateSingleMetric(client *resty.Client, mtype string, mname string, mvalue string) {
+func GetUpdateMetricRequest(client *resty.Client, params MetricUpdateParams) (*resty.Request, error) {
 	var response responses.MetricUpdateResponse
 	var responseErr responses.ErrorResponse
 
-	log.Printf(`Обновляю метрику %s типа %s: %s`, mname, mtype, mvalue)
+	var data model.Metrics
 
-	req := client.R().SetPathParams(map[string]string{
-		"mtype": mtype, "mvalue": mvalue, "mname": mname,
-	}).SetResult(&response).SetError(&responseErr)
-
-	res, err := req.Post(client.BaseURL() + "/update/{mtype}/{mname}/{mvalue}")
-
-	if err != nil {
-		log.Printf("ошибка обновления метрики %s: %s", mname, err.Error())
-		return
+	switch params.MType {
+	case model.Counter:
+		{
+			data = model.Metrics{ID: params.ID, MType: params.MType, Delta: &params.Delta}
+		}
+	case model.Gauge:
+		{
+			data = model.Metrics{ID: params.ID, MType: params.MType, Value: &params.Value}
+		}
 	}
 
-	log.Printf("метрика %s отправлена: %v", mname, res)
+	body, err := json.Marshal(data)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return client.R().SetBody(body).SetResult(&response).SetError(&responseErr), nil
 }

@@ -1,49 +1,48 @@
 package agent_test
 
 import (
-	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"resty.dev/v3"
 
-	"github.com/triple-sun/metriccollector/internal/responses"
+	"github.com/triple-sun/metriccollector/internal/agent"
 	"github.com/triple-sun/metriccollector/internal/router"
 	"github.com/triple-sun/metriccollector/internal/storage"
 )
 
-func TestAgent_UpdateSingleMetric(t *testing.T) {
+func TestAgent_GetUpdateMetricRequest(t *testing.T) {
 	testStorage := storage.NewMemStorage()
-	testRouter := router.Setup(testStorage)
+	testRouter := router.SetupRoutes(testStorage)
 
 	srv := httptest.NewServer(testRouter)
 	defer srv.Close()
 
-	testCases := []struct {
+	testClient := resty.New().SetBaseURL(srv.URL)
+	testParams :=  agent.MetricUpdateParams{ID: "TestMetric", MType: "counter", Delta: 1}
+
+	tests := []struct {
+		name         string
 		method       string
-		expectedCode int
+		params       agent.MetricUpdateParams
 		expectedBody string
+		wantErr      bool
 	}{
-		{method: http.MethodGet, expectedCode: http.StatusMethodNotAllowed},
-		{method: http.MethodPut, expectedCode: http.StatusMethodNotAllowed},
-		{method: http.MethodDelete, expectedCode: http.StatusMethodNotAllowed},
-		{method: http.MethodPost, expectedCode: http.StatusOK},
+		{name: "should update metric", params: testParams, expectedBody: `{"id":"TestMetric","type":"counter","delta":1}`},
+		{name: "should throw if no metric", wantErr: true},
 	}
-	for _, tc := range testCases {
-		t.Run(tc.method, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.method, func(t *testing.T) {
 			// делаем запрос с помощью библиотеки resty к адресу запущенного сервера,
 			// который хранится в поле URL соответствующей структуры
-			req := resty.New().R().
-				SetMethod(tc.method).
-				SetURL(srv.URL + "/update/counter/TestCounter/1").
-				SetBody(`"success":false, "message":"ibama"`).
-				SetResult(&responses.MetricUpdateResponse{})
+			req, err := agent.GetUpdateMetricRequest(testClient, test.params)
 
-			res, err := req.Send()
-			assert.NoError(t, err, "error making HTTP request")
-
-			assert.Equal(t, tc.expectedCode, res.StatusCode(), "Response code didn't match expected")
+			if test.wantErr {
+				assert.NoError(t, err, "error making HTTP request")
+			} else {
+				assert.JSONEq(t, test.expectedBody, string(req.Body.([]uint8)), "Request body didn't match expected")
+			}
 		})
 	}
 }

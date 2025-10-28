@@ -17,7 +17,7 @@ type MemStorageRepository interface {
 	UpdateGauge(name string, value string) (models.Metrics, error)
 	UpdateMetrics(metrics models.Metrics) models.Metrics
 	GetMetrics() *map[string]models.Metrics
-	GetMetricsByName(mname string) (models.Metrics, error)
+	GetMetricsByID(mname string) (models.Metrics, error)
 }
 
 func NewMemStorage() *MemStorage {
@@ -101,7 +101,7 @@ func (ms *MemStorage) GetMetrics() *map[string]models.Metrics {
 	return &ms.metrics
 }
 
-func (ms *MemStorage) GetMetricsByName(mname string) (models.Metrics, error) {
+func (ms *MemStorage) GetMetricsByID(mname string) (models.Metrics, error) {
 	found, ok := ms.metrics[mname]
 
 	if !ok {

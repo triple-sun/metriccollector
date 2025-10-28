@@ -15,10 +15,10 @@ const (
 // что бы отличать значение "0", от не заданного значения
 // и соответственно не кодировать в структуру.
 type Metrics struct {
-	ID    string   `json:"id"`
-	MType string   `json:"type"`
-	Delta *int64   `json:"delta,omitempty"`
-	Value *float64 `json:"value,omitempty"`
+	ID    string   `json:"id" binding:"required"`
+	MType string   `json:"type" binding:"required,oneof=counter gauge"`
+	Delta *int64   `json:"delta,omitempty" binding:"omitempty,required_if=MType counter"`
+	Value *float64 `json:"value,omitempty" binding:"omitempty,required_if=MType gauge"`
 	Hash  string   `json:"hash,omitempty"`
 }
 
