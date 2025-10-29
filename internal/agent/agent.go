@@ -7,6 +7,7 @@ import (
 
 	"github.com/triple-sun/metriccollector/internal/model"
 	"github.com/triple-sun/metriccollector/internal/responses"
+	"github.com/triple-sun/metriccollector/internal/utils"
 )
 
 type MetricUpdateParams struct {
@@ -17,9 +18,6 @@ type MetricUpdateParams struct {
 }
 
 func GetUpdateMetricRequest(client *resty.Client, params MetricUpdateParams) (*resty.Request, error) {
-	var response responses.MetricUpdateResponse
-	var responseErr responses.ErrorResponse
-
 	var data model.Metrics
 
 	switch params.MType {
@@ -39,5 +37,11 @@ func GetUpdateMetricRequest(client *resty.Client, params MetricUpdateParams) (*r
 		return nil, err
 	}
 
-	return client.R().SetBody(body).SetResult(&response).SetError(&responseErr), nil
+	zbody, err := utils.Compress(body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return client.R().SetHeader("Content-Encoding", "gzip").SetBody(zbody).SetResult(&responses.MetricUpdateResponse{}).SetError(&responses.ErrorResponse{}), nil
 }

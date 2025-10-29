@@ -33,7 +33,7 @@ func TestAgent_GetUpdateMetricRequest(t *testing.T) {
 		{name: "should throw if no metric", wantErr: true},
 	}
 	for _, test := range tests {
-		t.Run(test.method, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			// делаем запрос с помощью библиотеки resty к адресу запущенного сервера,
 			// который хранится в поле URL соответствующей структуры
 			req, err := agent.GetUpdateMetricRequest(testClient, test.params)

@@ -79,8 +79,10 @@ func main() {
 					logger.Log.Err(err).Msgf("ошибка создания запроса обновления метрики %s: %s", params.ID, err.Error())
 				}
 
-				if res, err := req.Post(client.BaseURL() + "/update"); err != nil {
-					logger.Log.Err(err).Msgf("ошибка обновления метрики %s: %s", params.ID, err.Error())
+				res, err := req.Post(client.BaseURL() + "/update")
+
+				if res.Error() != nil {
+					logger.Log.Err(err).Msgf("ошибка обновления метрики %s: %s", params.ID, res.Result())
 				} else {
 					logger.Log.Info().Msgf("метрика %s отправлена: %v", params.ID, res)
 				}

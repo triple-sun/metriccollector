@@ -1,11 +1,13 @@
 package router
 
 import (
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 
 	"github.com/triple-sun/metriccollector/internal/handler"
 	"github.com/triple-sun/metriccollector/internal/middleware"
 	"github.com/triple-sun/metriccollector/internal/storage"
+	"github.com/triple-sun/metriccollector/internal/utils"
 )
 
 func SetupRoutes(storage *storage.MemStorage) *gin.Engine {
@@ -16,6 +18,8 @@ func SetupRoutes(storage *storage.MemStorage) *gin.Engine {
 	r.Use(middleware.ResponseLogger())
 	r.Use(middleware.ErrorHandler())
 	r.Use(middleware.RequestLogger())
+
+	r.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithDecompressFn(gzip.DefaultDecompressHandle), gzip.WithCustomShouldCompressFn(utils.ShouldServerCompress)))
 
 	r.GET("/", handler.GetAllMetricsHandler(storage))
 

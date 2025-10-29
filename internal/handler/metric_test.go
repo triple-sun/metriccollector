@@ -15,7 +15,6 @@ import (
 	"github.com/triple-sun/metriccollector/internal/storage"
 )
 
-
 func TestGetAllMetricsHandler(t *testing.T) {
 	testDelta := int64(2)
 	testMetrics := model.Metrics{
@@ -38,11 +37,14 @@ func TestGetAllMetricsHandler(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("GET", "/", nil)
-		r.ServeHTTP(w, req)
-		assert.Equal(t, test.status, w.Code)
-		assert.Equal(t, test.want, w.Body.String())
+		t.Run(test.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			req, _ := http.NewRequest("GET", "/", nil)
+			r.ServeHTTP(w, req)
+			assert.Equal(t, test.status, w.Code)
+			assert.Equal(t, test.want, w.Body.String())
+		})
+
 	}
 }
 
@@ -88,7 +90,6 @@ func TestMetricUpdateJSONHandler(t *testing.T) {
 	}
 }
 
-
 func TestMetricGetValueJSONHandler(t *testing.T) {
 	testDelta := int64(2)
 	testMetrics := model.Metrics{
@@ -130,7 +131,6 @@ func TestMetricGetValueJSONHandler(t *testing.T) {
 		})
 	}
 }
-
 
 func TestMetricUpdateHandler(t *testing.T) {
 	testStorage := storage.NewMemStorage()
