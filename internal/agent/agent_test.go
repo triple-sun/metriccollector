@@ -10,6 +10,7 @@ import (
 	"github.com/triple-sun/metriccollector/internal/agent"
 	"github.com/triple-sun/metriccollector/internal/router"
 	"github.com/triple-sun/metriccollector/internal/storage"
+	"github.com/triple-sun/metriccollector/internal/utils"
 )
 
 func TestAgent_GetUpdateMetricRequest(t *testing.T) {
@@ -20,7 +21,7 @@ func TestAgent_GetUpdateMetricRequest(t *testing.T) {
 	defer srv.Close()
 
 	testClient := resty.New().SetBaseURL(srv.URL)
-	testParams :=  agent.MetricUpdateParams{ID: "TestMetric", MType: "counter", Delta: 1}
+	testParams := agent.MetricUpdateParams{ID: "TestMetric", MType: "counter", Delta: 1}
 
 	tests := []struct {
 		name         string
@@ -38,10 +39,12 @@ func TestAgent_GetUpdateMetricRequest(t *testing.T) {
 			// который хранится в поле URL соответствующей структуры
 			req, err := agent.GetUpdateMetricRequest(testClient, test.params)
 
+			zbody, _ := utils.Compress([]byte(test.expectedBody))
+
 			if test.wantErr {
 				assert.NoError(t, err, "error making HTTP request")
 			} else {
-				assert.JSONEq(t, test.expectedBody, string(req.Body.([]uint8)), "Request body didn't match expected")
+				assert.Equal(t, zbody, req.Body, "Request body didn't match expected")
 			}
 		})
 	}
