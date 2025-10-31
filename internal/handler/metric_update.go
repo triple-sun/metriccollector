@@ -10,81 +10,40 @@ import (
 
 	"github.com/triple-sun/metriccollector/internal/logger"
 	"github.com/triple-sun/metriccollector/internal/model"
-	"github.com/triple-sun/metriccollector/internal/responses"
+	"github.com/triple-sun/metriccollector/internal/requests"
 	"github.com/triple-sun/metriccollector/internal/storage"
 	"github.com/triple-sun/metriccollector/internal/utils"
 )
 
-type GetMetricParams struct {
-}
-
-func GetAllMetricsHandler(storage *storage.MemStorage) gin.HandlerFunc {
+func UpdateMetricJSONHandler(storage storage.MemStorageRepository) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var result string
+		var body requests.UpdateMetricRequest
 
-		metrics := storage.GetMetrics()
-
-		for name, metric := range *metrics {
-			result += fmt.Sprintf("<b>%s</b>: %s<br/>", name, metric.GetValue())
-		}
-
-		ctx.Data(200, "text/html; charset=utf-8", fmt.Appendf(nil, `<html><body>%s</body></html>`, result))
-	}
-}
-
-func MetricGetValueJSONHandler(storage *storage.MemStorage) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		var body model.Metrics
-
-		if err := ctx.BindJSON(&body); err != nil {
-			ctx.AbortWithError(http.StatusBadRequest, err)
-			return
-		}
-
-		metric, findErr := storage.GetMetricsByID(body.ID)
-
-		if findErr != nil {
-			ctx.AbortWithError(http.StatusNotFound, findErr)
-			return
-		}
-
-		ctx.JSON(http.StatusOK, metric)
-	}
-}
-
-func MetricUpdateJSONHandler(storage storage.MemStorageRepository) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		var body model.Metrics
-
-		logger.Log.Info().Interface("body", ctx.Request.GetBody)
 		err := ctx.BindJSON(&body)
 
 		if err != nil {
+			logger.Log.Err(err).Msg(err.Error())
 			if err.Error() == "Key: 'Metrics.ID' Error:Field validation for 'ID' failed on the 'required' tag" {
 				ctx.AbortWithError(http.StatusNotFound, err)
 			} else {
 				ctx.AbortWithError(http.StatusBadRequest, err)
 			}
 			return
-		}
-		// обновляем
-		updated := storage.UpdateMetrics(body)
 
-		// назначаем ответ
-		ctx.JSON(http.StatusOK, responses.MetricUpdateResponse{
-			Success: true, Metrics: updated,
-		})
+		}
+
+		logger.Log.Info().Msgf("Получен запрос обновления метрики: %v", body)
+
+		updated := storage.UpdateMetrics(model.Metrics{ID: body.ID, MType: body.MType, Value: body.Value, Delta: body.Delta})
+
+		ctx.JSON(http.StatusOK, &updated)
 
 		log.Printf("Запрос обновления метрики обработан успешно!\n")
 	}
 }
 
-
-
-func MetricUpdateHandler(storage storage.MemStorageRepository) gin.HandlerFunc {
+func UpdateMetricHandler(storage storage.MemStorageRepository) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		//var response responses.MetricUpdateResponse
-
 		mtype := ctx.Param("mtype")
 		mname := ctx.Param("mname")
 		mvalue := ctx.Param("mvalue")
@@ -129,38 +88,8 @@ func MetricUpdateHandler(storage storage.MemStorageRepository) gin.HandlerFunc {
 		updated := storage.UpdateMetrics(metrics)
 
 		// назначаем ответ
-		ctx.JSON(http.StatusOK, responses.MetricUpdateResponse{
-			Success: true, Metrics: updated,
-		})
+		ctx.JSON(http.StatusOK, &updated)
 
 		log.Printf("Запрос обновления метрики обработан успешно!\n")
-	}
-}
-
-func MetricGetValueHandler(storage *storage.MemStorage) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		mtype := ctx.Param("mtype")
-		mname := ctx.Param("mname")
-
-		typeErr := utils.ValidateMType(mtype)
-		nameErr := utils.ValidateMName(mname)
-
-		if typeErr != nil {
-			ctx.AbortWithError(http.StatusBadRequest, typeErr)
-			return
-		}
-
-		if nameErr != nil {
-			ctx.AbortWithError(http.StatusBadRequest, typeErr)
-			return
-		}
-
-		metric, findErr := storage.GetMetricsByID(mname)
-
-		if findErr != nil {
-			ctx.AbortWithError(http.StatusNotFound, findErr)
-		}
-
-		ctx.Data(200, "text/plain; charset=utf-8", []byte(metric.GetValue()))
 	}
 }

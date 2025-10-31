@@ -19,12 +19,12 @@ func main() {
 	log.Println(`Запускаю приложение...`)
 	storage := storage.NewMemStorage()
 	log.Println(`Создано хранилище`)
-	r := router.SetupRoutes(storage)
+	router := router.SetupRouter(storage)
 	log.Println(`Настроен Router`)
 
 	log.Printf(`Запускаю приложение на адресе %s...`, address)
 
-	if err := http.ListenAndServe(address, r); err != nil {
+	if err := http.ListenAndServe(address, router); err != nil {
 		log.Fatal(`Ошибка запуска сервера`)
 		panic(err)
 	}

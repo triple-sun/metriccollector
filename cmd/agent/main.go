@@ -1,13 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"math/rand"
+	"net/http"
 	"runtime"
 	"time"
-
-	"resty.dev/v3"
 
 	"github.com/triple-sun/metriccollector/internal/agent"
 	"github.com/triple-sun/metriccollector/internal/config"
@@ -26,7 +24,7 @@ func main() {
 	config.ParseAgentFlags(&address, &pInterval, &rInterval)
 	config.ParseAgentEnv(&cfg, &address, &pInterval, &rInterval)
 
-	client := resty.New().SetBaseURL(fmt.Sprintf("http://%s", address))
+	client := http.DefaultClient
 
 	pCount := 0
 	pTicker := time.NewTicker(time.Duration(pInterval) * time.Second)
@@ -73,18 +71,18 @@ func main() {
 			} {
 				log.Printf(`Обновляю метрику %s типа %s`, params.ID, params.MType)
 
-				req, err := agent.GetUpdateMetricRequest(client, params)
+				req, err := agent.GetUpdateMetricRequest(address, params)
 
 				if err != nil {
 					logger.Log.Err(err).Msgf("ошибка создания запроса обновления метрики %s: %s", params.ID, err.Error())
 				}
 
-				res, err := req.Post(client.BaseURL() + "/update")
-
-				if res.Error() != nil {
-					logger.Log.Err(err).Msgf("ошибка обновления метрики %s: %s", params.ID, res.Result())
+				if res, err := client.Do(req); err != nil {
+					logger.Log.Error().Err(err).Msgf("ошибка обновления метрики %s: %v", params.ID, err.Error())
+				} else if res.StatusCode >= 400 {
+					logger.Log.Error().Err(err).Msgf("ошибка обновления метрики %s: %v", params.ID, res.Body)
 				} else {
-					logger.Log.Info().Msgf("метрика %s отправлена: %v", params.ID, res)
+					logger.Log.Info().Msgf("метрика %s отправлена: %v", params.ID, res.Body)
 				}
 			}
 

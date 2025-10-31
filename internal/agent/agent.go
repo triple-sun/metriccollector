@@ -1,13 +1,13 @@
 package agent
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
-
-	"resty.dev/v3"
+	"fmt"
+	"net/http"
 
 	"github.com/triple-sun/metriccollector/internal/model"
-	"github.com/triple-sun/metriccollector/internal/responses"
-	"github.com/triple-sun/metriccollector/internal/utils"
 )
 
 type MetricUpdateParams struct {
@@ -17,31 +17,29 @@ type MetricUpdateParams struct {
 	Delta int64
 }
 
-func GetUpdateMetricRequest(client *resty.Client, params MetricUpdateParams) (*resty.Request, error) {
-	var data model.Metrics
+func GetUpdateMetricRequest(address string, params MetricUpdateParams) (*http.Request, error) {
+	var buf bytes.Buffer
 
-	switch params.MType {
-	case model.Counter:
-		{
-			data = model.Metrics{ID: params.ID, MType: params.MType, Delta: &params.Delta}
-		}
-	case model.Gauge:
-		{
-			data = model.Metrics{ID: params.ID, MType: params.MType, Value: &params.Value}
-		}
+	body, err := json.Marshal(model.Metrics{ID: params.ID, MType: params.MType, Delta: &params.Delta, Value: &params.Value})
+	if err != nil {
+		return nil, err
 	}
-
-	body, err := json.Marshal(data)
-
+	zw := gzip.NewWriter(&buf)
+	defer zw.Close()
+	if _, err := zw.Write(body); err != nil {
+		return nil, fmt.Errorf("error compressing data: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		return nil, fmt.Errorf("failed to compress data: %v", err)
+	}
+	req, err := http.NewRequest("POST", address+"/update", &buf)
 	if err != nil {
 		return nil, err
 	}
 
-	zbody, err := utils.Compress(body)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Encoding", "gzip")
+	req.Header.Set("Accept-Encoding", "gzip")
 
-	if err != nil {
-		return nil, err
-	}
-
-	return client.R().SetHeader("Content-Encoding", "gzip").SetBody(zbody).SetResult(&responses.MetricUpdateResponse{}).SetError(&responses.ErrorResponse{}), nil
+	return req, nil
 }

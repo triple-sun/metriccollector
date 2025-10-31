@@ -5,6 +5,7 @@ import (
 	"log"
 
 	models "github.com/triple-sun/metriccollector/internal/model"
+	"github.com/triple-sun/metriccollector/internal/requests"
 	"github.com/triple-sun/metriccollector/internal/utils"
 )
 
@@ -17,7 +18,7 @@ type MemStorageRepository interface {
 	UpdateGauge(name string, value string) (models.Metrics, error)
 	UpdateMetrics(metrics models.Metrics) models.Metrics
 	GetMetrics() *map[string]models.Metrics
-	GetMetricsByID(mname string) (models.Metrics, error)
+	FindOne(params *requests.GetMetricValueRequest) (models.Metrics, error)
 }
 
 func NewMemStorage() *MemStorage {
@@ -101,11 +102,11 @@ func (ms *MemStorage) GetMetrics() *map[string]models.Metrics {
 	return &ms.metrics
 }
 
-func (ms *MemStorage) GetMetricsByID(mname string) (models.Metrics, error) {
-	found, ok := ms.metrics[mname]
+func (ms *MemStorage) FindOne(params *requests.GetMetricValueRequest) (models.Metrics, error) {
+	found, ok := ms.metrics[params.ID]
 
-	if !ok {
-		return models.Metrics{}, fmt.Errorf("метрика %s не найдена", mname)
+	if !ok || found.MType != params.MType {
+		return models.Metrics{}, fmt.Errorf("метрика %s не найдена", params.ID)
 	}
 
 	return found, nil
