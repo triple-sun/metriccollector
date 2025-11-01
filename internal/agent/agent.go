@@ -21,6 +21,7 @@ func GetUpdateMetricRequest(address string, params MetricUpdateParams) (*http.Re
 	var buf bytes.Buffer
 
 	body, err := json.Marshal(model.Metrics{ID: params.ID, MType: params.MType, Delta: &params.Delta, Value: &params.Value})
+	
 	if err != nil {
 		return nil, err
 	}

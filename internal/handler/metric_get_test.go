@@ -73,6 +73,9 @@ func TestGetMetricValueJSONHandler(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			req, _ := http.NewRequest("POST", "/value", strings.NewReader(test.body))
+
+			req.Header.Set("Content-Type", "application/json")
+
 			testRouter.ServeHTTP(w, req)
 
 			assert.Equal(t, test.status, w.Code)

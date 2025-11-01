@@ -2,37 +2,41 @@ package utils
 
 import (
 	"compress/gzip"
+	"fmt"
 	"io"
 	"net/http"
-
-	"github.com/gin-gonic/gin"
 )
 
 type compressWriter struct {
-	gin.ResponseWriter
+	w  http.ResponseWriter
 	zw *gzip.Writer
 }
 
-func NewCompressWriter(w gin.ResponseWriter) *compressWriter {
+func NewCompressWriter(w http.ResponseWriter) *compressWriter {
 	return &compressWriter{
-		ResponseWriter: w,
-		zw:             gzip.NewWriter(w),
+		w:  w,
+		zw: gzip.NewWriter(w),
 	}
 }
 
 func (cw *compressWriter) Header() http.Header {
-	return cw.ResponseWriter.Header()
+	return cw.w.Header()
 }
 
 func (cw *compressWriter) Write(p []byte) (int, error) {
-	return cw.zw.Write(p)
+	count, err := cw.zw.Write(p)
+
+	fmt.Printf("wrote: %d", count)
+
+	return count, err
 }
 
 func (cw *compressWriter) WriteHeader(code int) {
-	if code < 300 {
-		cw.ResponseWriter.Header().Set("Content-Encoding", "gzip")
-	}
-	cw.ResponseWriter.WriteHeader(code)
+	cw.w.Header().Set("Content-Encoding", "gzip")
+	cw.w.WriteHeader(code)
+
+	fmt.Printf("wrote header: %d", code)
+
 }
 
 // Close закрывает gzip.Writer и досылает все данные из буфера.
@@ -60,13 +64,13 @@ func NewCompressReader(r io.ReadCloser) (*compressReader, error) {
 	}, nil
 }
 
-func (c compressReader) Read(p []byte) (n int, err error) {
-	return c.zr.Read(p)
+func (cr compressReader) Read(p []byte) (n int, err error) {
+	return cr.zr.Read(p)
 }
 
-func (c *compressReader) Close() error {
-	if err := c.r.Close(); err != nil {
+func (cr *compressReader) Close() error {
+	if err := cr.r.Close(); err != nil {
 		return err
 	}
-	return c.zr.Close()
+	return cr.zr.Close()
 }

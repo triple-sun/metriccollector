@@ -19,3 +19,14 @@ func ValidateMName(mname string) error {
 	}
 	return nil
 }
+
+func ValidateMValue(mtype string, mdelta *int64, mvalue *float64) error {
+	if mtype == models.Counter && mdelta == nil {
+		return fmt.Errorf("отсутствует значение delta")
+	}
+	if mtype == models.Gauge && mvalue == nil {
+		return fmt.Errorf("отсутствует значение value")
+	}
+
+	return nil
+}

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"net/http/httptest"
-	//"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,10 +28,10 @@ func TestUpdateMetricJSONHandler(t *testing.T) {
 		{"should update gauge metric", `{"id": "TestGauge", "type": "gauge", "value": 1.5}`, `{"id":"TestGauge","type":"gauge","value": 1.5}`, 200},
 		{"should create counter metric", `{"id": "TestCounter", "type": "counter", "Delta": 1}`, `{"id":"TestCounter","type":"counter","delta":1}`, 200},
 		{"should update counter metric", `{"id": "TestCounter", "type": "counter", "Delta": 1}`, `{"id":"TestCounter","type":"counter","delta":2}`, 200},
-		{"should return 400 if wrong metric type was provided", `{"id": "TestCounter", "type": "wrongtype", "Delta": 1}`, `{"message":"Key: 'UpdateMetricRequest.MType' Error:Field validation for 'MType' failed on the 'oneof' tag","success":false}`, 400},
-		{"should return 400 if no metric type was provided", `{"id": "", "type": "counter", "Delta": 1}`, `{"message":"Key: 'UpdateMetricRequest.ID' Error:Field validation for 'ID' failed on the 'required' tag","success":false}`, 400},
-		{"should return 400 if wrong metric value for counter was provided", `{"id": "TestWrongCounterValue", "type": "counter", "Delta": 1.2}`, `{"message":"json: cannot unmarshal number 1.2 into Go struct field UpdateMetricRequest.delta of type int64","success":false}`, 400},
-		{"should return 400 if wrong metric value for gauge was provided", `{"id": "TestWrongCounterValue", "type": "gauge", "Delta": "abc"}`, `{"message":"json: cannot unmarshal string into Go struct field UpdateMetricRequest.delta of type int64","success":false}`, 400},
+		{"should return 400 if wrong metric type was provided", `{"id": "TestCounter", "type": "wrongtype", "Delta": 1}`, `{"message":"некорректный тип метрики: wrongtype"}`, 400},
+		{"should return 404 if no metric name was provided", `{"id": "", "type": "counter", "Delta": 1}`, `{"message":"не найдено имя метрики"}`, 404},
+		{"should return 400 if wrong metric value for counter was provided", `{"id": "TestWrongCounterValue", "type": "counter", "Delta": 1.2}`, `{"message":"json: cannot unmarshal number 1.2 into Go struct field UpdateMetricRequest.delta of type int64"}`, 400},
+		{"should return 400 if wrong metric value for gauge was provided", `{"id": "TestWrongCounterValue", "type": "gauge", "Delta": "abc"}`, `{"message":"json: cannot unmarshal string into Go struct field UpdateMetricRequest.delta of type int64"}`, 400},
 	}
 
 	for _, test := range tests {
@@ -73,16 +72,17 @@ func TestUpdateMetricHandler(t *testing.T) {
 		{"should update gauge metric", "/update/gauge/TestGauge/1", "POST", `{"id":"TestGauge","type":"gauge","value": 1}`, 200},
 		{"should create counter metric", "/update/counter/TestCounter/1", "POST", `{"id":"TestCounter","type":"counter","delta":1}`, 200},
 		{"should update counter metric", "/update/counter/TestCounter/1", "POST", `{"id":"TestCounter","type":"counter","delta":2}`, 200},
-		{"should return 400 if wrong metric type was provided", "/update/wrongtype/TestWrongType/1", "POST", `{"message":"некорректный тип метрики: wrongtype","success":false}`, 400},
-		{"should return 400 if no metric type was provided", "/update/counter//1", "POST", `{"message":"не найдено имя метрики","success":false}`, 404},
-		{"should return 400 if wrong metric value for counter was provided", "/update/counter/TestCounter/1.5", "POST", `{"message": "некорректный тип значения", "success": false}`, 400},
-		{"should return 400 if wrong metric value for gauge was provided", "/update/gauge/TestGauge/abc", "POST", `{"message": "некорректный тип значения", "success": false}`, 400},
+		{"should return 400 if wrong metric type was provided", "/update/wrongtype/TestWrongType/1", "POST", `{"message":"некорректный тип метрики: wrongtype"}`, 400},
+		{"should return 404 if no metric name was provided", "/update/counter//1", "POST", `{"message":"не найдено имя метрики"}`, 404},
+		{"should return 400 if wrong metric value for counter was provided", "/update/counter/TestCounter/1.5", "POST", `{"message": "некорректный тип значения"}`, 400},
+		{"should return 400 if wrong metric value for gauge was provided", "/update/gauge/TestGauge/abc", "POST", `{"message": "некорректный тип значения"}`, 400},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			req := httptest.NewRequest(test.method, test.url, nil)
+			
 			testRouter.ServeHTTP(w, req)
 
 			assert.Equal(t, test.status, w.Code)

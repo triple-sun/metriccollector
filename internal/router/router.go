@@ -1,27 +1,25 @@
 package router
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/triple-sun/metriccollector/internal/handler"
-	"github.com/triple-sun/metriccollector/internal/middleware"
+	mware "github.com/triple-sun/metriccollector/internal/middleware"
 	"github.com/triple-sun/metriccollector/internal/storage"
 )
 
-func SetupRouter(storage *storage.MemStorage) *gin.Engine {
-	r := gin.Default()
+func SetupRouter(storage *storage.MemStorage) *chi.Mux {
+	r := chi.NewRouter()
+	r.Use(mware.RequestLogger, mware.Gzip, middleware.Compress(5, "text/html", "application/json"))
 
-	r.HandleMethodNotAllowed = true
+	r.Get("/", handler.GetAllMetricsHandler(storage))
 
-	r.Use(middleware.RequestHandler(), middleware.ResponseHandler())
+	r.Get("/value/{mtype}/{mname}", handler.GetMetricValueHandler(storage))
+	r.Post("/update/{mtype}/{mname}/{mvalue}", handler.UpdateMetricHandler(storage))
 
-	r.GET("/", handler.GetAllMetricsHandler(storage))
-
-	r.GET("/value/:mtype/:mname", handler.GetMetricValueHandler(storage))
-	r.POST("/update/:mtype/:mname/:mvalue", handler.UpdateMetricHandler(storage))
-
-	r.POST("/value", handler.GetMetricValueJSONHandler(storage))
-	r.POST("/update", handler.UpdateMetricJSONHandler(storage))
+	r.Post("/value", handler.GetMetricValueJSONHandler(storage))
+	r.Post("/update", handler.UpdateMetricJSONHandler(storage))
 
 	return r
 }

@@ -26,7 +26,7 @@ func TestAgent_GetUpdateMetricRequest(t *testing.T) {
 	testParams := agent.MetricUpdateParams{ID: "TestMetric", MType: "counter", Delta: 1}
 
 	type want struct {
-		url             string
+		path             string
 		contentType     string
 		contentEncoding string
 	}
@@ -37,14 +37,14 @@ func TestAgent_GetUpdateMetricRequest(t *testing.T) {
 		params agent.MetricUpdateParams
 		want   want
 	}{
-		{name: "should create update metrics request with compression", params: testParams, want: want{url: srv.URL, contentType: "application/json", contentEncoding: "gzip"}}}
+		{name: "should create update metrics request with compression", params: testParams, want: want{path: "/update", contentType: "application/json", contentEncoding: "gzip"}}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// делаем запрос с помощью библиотеки resty к адресу запущенного сервера,
 			// который хранится в поле URL соответствующей структуры
 			req, _ := agent.GetUpdateMetricRequest(srv.URL, test.params)
 
-			assert.Equal(t, test.want.url, req.URL.RequestURI(), "Request URL didn't match expected")
+			assert.Equal(t, test.want.path, req.URL.RequestURI(), "Request URL didn't match expected")
 			assert.Equal(t, test.want.contentType, req.Header.Get("Content-Type"), "Content-Type header didn't match expected")
 			assert.Equal(t, test.want.contentEncoding, req.Header.Get("Content-Encoding"))
 		})
@@ -85,10 +85,6 @@ func TestAgent_SendUpdateMetricRequest(t *testing.T) {
 			require.NoError(t, err)
 
 			fmt.Printf("%v", res.Header)
-
-			bb, err := io.ReadAll(res.Body)
-
-			fmt.Printf("%v\n", string(bb))
 
 			zr, err := gzip.NewReader(res.Body)
 			require.NoError(t, err)

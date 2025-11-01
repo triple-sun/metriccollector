@@ -1,94 +1,67 @@
 package handler
 
 import (
-	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
 
 	"github.com/triple-sun/metriccollector/internal/logger"
 	"github.com/triple-sun/metriccollector/internal/model"
 	"github.com/triple-sun/metriccollector/internal/requests"
+	"github.com/triple-sun/metriccollector/internal/responses"
 	"github.com/triple-sun/metriccollector/internal/storage"
-	"github.com/triple-sun/metriccollector/internal/utils"
 )
 
-func UpdateMetricJSONHandler(storage storage.MemStorageRepository) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		var body requests.UpdateMetricRequest
+func UpdateMetricJSONHandler(storage storage.MemStorageRepository) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		req := &requests.UpdateMetricRequest{}
 
-		err := ctx.BindJSON(&body)
-
-		if err != nil {
-			logger.Log.Err(err).Msg(err.Error())
-			if err.Error() == "Key: 'Metrics.ID' Error:Field validation for 'ID' failed on the 'required' tag" {
-				ctx.AbortWithError(http.StatusNotFound, err)
+		if err := render.Bind(r, req); err != nil {
+			if err.Error() == "не найдено имя метрики" {
+				_ = render.Render(w, r, responses.NewErrorResponse(404, err))
 			} else {
-				ctx.AbortWithError(http.StatusBadRequest, err)
+				_ = render.Render(w, r, responses.NewErrorResponse(400, err))
 			}
 			return
-
 		}
 
-		logger.Log.Info().Msgf("Получен запрос обновления метрики: %v", body)
+		logger.Log.Info().Msgf("Получен запрос обновления метрики: %v", req)
 
-		updated := storage.UpdateMetrics(model.Metrics{ID: body.ID, MType: body.MType, Value: body.Value, Delta: body.Delta})
+		updated := storage.UpdateMetrics(model.Metrics{ID: req.ID, MType: req.MType, Value: req.Value, Delta: req.Delta})
 
-		ctx.JSON(http.StatusOK, &updated)
+		render.JSON(w, r, &updated)
 
 		log.Printf("Запрос обновления метрики обработан успешно!\n")
 	}
 }
 
-func UpdateMetricHandler(storage storage.MemStorageRepository) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		mtype := ctx.Param("mtype")
-		mname := ctx.Param("mname")
-		mvalue := ctx.Param("mvalue")
+func UpdateMetricHandler(storage storage.MemStorageRepository) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		req := &requests.UpdateMetricRequest{ID: chi.URLParam(r, "mname"), MType: chi.URLParam(r, "mtype")}
 
-		// Проверяем тип метрик
-		err := utils.ValidateMType(mtype)
-		if err != nil {
-			ctx.AbortWithError(http.StatusBadRequest, err)
+		if err := req.ParseValue(chi.URLParam(r, "mvalue")); err != nil {
+			_ = render.Render(w, r, responses.NewErrorResponse(400, err))
 			return
 		}
 
-		// Проверяем имя метрики
-		err = utils.ValidateMName(mname)
-		if err != nil {
-			ctx.AbortWithError(http.StatusNotFound, err)
+		if err := req.Validate(); err != nil {
+			if err.Error() == "не найдено имя метрики" {
+				_ = render.Render(w, r, responses.NewErrorResponse(404, err))
+			} else {
+				_ = render.Render(w, r, responses.NewErrorResponse(400, err))
+			}
 			return
 		}
 
-		log.Printf("Получен запрос обновления метрики: Type: [%s]; ID: [%s]; Value: [%s]\n", mtype, mname, mvalue)
-
-		metrics := model.Metrics{ID: mname, MType: mtype}
-
-		// Обновляем метрики
-		switch mtype {
-		case model.Gauge:
-			parsed, err := strconv.ParseFloat(mvalue, 64)
-			if err != nil {
-				ctx.AbortWithError(http.StatusBadRequest, fmt.Errorf("некорректный тип значения"))
-				return
-			}
-			metrics.Value = &parsed
-		case model.Counter:
-			parsed, err := strconv.ParseInt(mvalue, 10, 64)
-			if err != nil {
-				ctx.AbortWithError(http.StatusBadRequest, fmt.Errorf("некорректный тип значения"))
-				return
-			}
-			metrics.Delta = &parsed
-		}
+		log.Printf("Получен запрос обновления метрики: %v", req)
 
 		// обновляем
-		updated := storage.UpdateMetrics(metrics)
+		updated := storage.UpdateMetrics(model.Metrics{ID: req.ID, MType: req.MType, Value: req.Value, Delta: req.Delta})
 
 		// назначаем ответ
-		ctx.JSON(http.StatusOK, &updated)
+		render.JSON(w, r, &updated)
 
 		log.Printf("Запрос обновления метрики обработан успешно!\n")
 	}

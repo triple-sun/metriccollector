@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
 
 	"github.com/triple-sun/metriccollector/internal/requests"
+	"github.com/triple-sun/metriccollector/internal/responses"
 	"github.com/triple-sun/metriccollector/internal/storage"
-	"github.com/triple-sun/metriccollector/internal/utils"
 )
 
-func GetAllMetricsHandler(storage *storage.MemStorage) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
+func GetAllMetricsHandler(storage *storage.MemStorage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		var result string
 
 		fmt.Println("Got all metrics")
@@ -23,56 +24,46 @@ func GetAllMetricsHandler(storage *storage.MemStorage) gin.HandlerFunc {
 			result += fmt.Sprintf("<b>%s</b>: %s<br/>", name, metric.GetValue())
 		}
 
-		ctx.Data(200, "text/html; charset=utf-8", fmt.Appendf(nil, `<html><body>%s</body></html>`, result))
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(200)
+		if _, err := w.Write(fmt.Appendf(nil, `<html><body>%s</body></html>`, result)); err != nil {
+			w.WriteHeader(500)
+		}
+	}
+
+}
+
+func GetMetricValueJSONHandler(storage *storage.MemStorage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		req := &requests.GetMetricValueRequest{}
+
+		if err := render.Bind(r, req); err != nil {
+			_ = render.Render(w, r, responses.NewErrorResponse(400, err))
+			return
+		}
+
+		if metric, err := storage.FindOne(req); err != nil {
+			_ = render.Render(w, r, responses.NewErrorResponse(404, err))
+			return
+		} else {
+			render.JSON(w, r, metric)
+		}
 	}
 }
 
+func GetMetricValueHandler(storage *storage.MemStorage) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		req := &requests.GetMetricValueRequest{MType: chi.URLParam(r, "mtype"), ID: chi.URLParam(r, "mname")}
 
-func GetMetricValueHandler(storage *storage.MemStorage) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		mtype := ctx.Param("mtype")
-		mname := ctx.Param("mname")
-
-		typeErr := utils.ValidateMType(mtype)
-		nameErr := utils.ValidateMName(mname)
-
-		if typeErr != nil {
-			ctx.AbortWithError(http.StatusBadRequest, typeErr)
+		if err := req.Validate(); err != nil {
+			_ = render.Render(w, r, responses.NewErrorResponse(400, err))
 			return
 		}
 
-		if nameErr != nil {
-			ctx.AbortWithError(http.StatusBadRequest, typeErr)
-			return
+		if metric, err := storage.FindOne(req); err != nil {
+			_ = render.Render(w, r, responses.NewErrorResponse(404, err))
+		} else {
+			render.JSON(w, r, metric)
 		}
-
-		metric, findErr := storage.FindOne(&requests.GetMetricValueRequest{ID: mname, MType: mtype})
-
-		if findErr != nil {
-			ctx.AbortWithError(http.StatusNotFound, findErr)
-			return
-		}
-
-		ctx.JSON(http.StatusOK, &metric)
-	}
-}
-
-func GetMetricValueJSONHandler(storage *storage.MemStorage) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		var req requests.GetMetricValueRequest
-
-		if err := ctx.BindJSON(&req); err != nil {
-			ctx.AbortWithError(http.StatusBadRequest, err)
-			return
-		}
-
-		metric, err := storage.FindOne(&req)
-
-		if err != nil {
-			ctx.AbortWithError(http.StatusNotFound, err)
-			return
-		}
-
-		ctx.JSON(http.StatusOK, &metric)
 	}
 }
