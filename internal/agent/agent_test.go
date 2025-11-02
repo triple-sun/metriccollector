@@ -26,7 +26,7 @@ func TestAgent_GetUpdateMetricRequest(t *testing.T) {
 	testParams := agent.MetricUpdateParams{ID: "TestMetric", MType: "counter", Delta: 1}
 
 	type want struct {
-		path             string
+		path            string
 		contentType     string
 		contentEncoding string
 	}
@@ -83,6 +83,8 @@ func TestAgent_SendUpdateMetricRequest(t *testing.T) {
 
 			res, err := testClient.Do(req)
 			require.NoError(t, err)
+
+			defer res.Body.Close()
 
 			fmt.Printf("%v", res.Header)
 

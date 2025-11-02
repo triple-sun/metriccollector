@@ -40,24 +40,6 @@ func Gzip(next http.Handler) http.Handler {
 			r.Body = cr
 		}
 
-		/**
-		acceptsGzip := strings.Contains(r.Header.Get("Accept-Encoding"), "gzip")
-
-		if (isJSON || isHTML) && acceptsGzip {
-			logger.Log.Info().Msg("Compressing response body...")
-
-			cw := utils.NewCompressWriter(w)
-
-			ow = cw
-
-			defer func() {
-				err := cw.Close()
-				if err != nil {
-					logger.Log.Error().Err(err)
-				}
-				logger.Log.Info().Msg("Response body compressed!")
-			}()
-		} */
 
 		next.ServeHTTP(ow, r)
 	})

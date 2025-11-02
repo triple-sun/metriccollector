@@ -3,10 +3,12 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
+	"github.com/triple-sun/metriccollector/internal/model"
 	"github.com/triple-sun/metriccollector/internal/requests"
 	"github.com/triple-sun/metriccollector/internal/responses"
 	"github.com/triple-sun/metriccollector/internal/storage"
@@ -63,7 +65,12 @@ func GetMetricValueHandler(storage *storage.MemStorage) http.HandlerFunc {
 		if metric, err := storage.FindOne(req); err != nil {
 			_ = render.Render(w, r, responses.NewErrorResponse(404, err))
 		} else {
-			render.JSON(w, r, metric)
+			switch metric.MType {
+			case model.Counter:
+				render.PlainText(w, r, strconv.FormatInt(*metric.Delta, 10))
+			case model.Gauge:
+				render.PlainText(w, r, strconv.FormatFloat(*metric.Value, 'f', -1, 64))
+			}
 		}
 	}
 }

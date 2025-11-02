@@ -77,12 +77,19 @@ func main() {
 					logger.Log.Err(err).Msgf("ошибка создания запроса обновления метрики %s: %s", params.ID, err.Error())
 				}
 
-				if res, err := client.Do(req); err != nil {
+				res, err := client.Do(req)
+
+				if err != nil {
 					logger.Log.Error().Err(err).Msgf("ошибка обновления метрики %s: %v", params.ID, err.Error())
 				} else if res.StatusCode >= 400 {
 					logger.Log.Error().Err(err).Msgf("ошибка обновления метрики %s: %v", params.ID, res.Body)
 				} else {
 					logger.Log.Info().Msgf("метрика %s отправлена: %v", params.ID, res.Body)
+				}
+
+				if err = res.Body.Close(); err != nil {
+					logger.Log.Error().Err(err).Msgf("ошибка закрытия тела запроса %s: %v", params.ID, res.Body)
+
 				}
 			}
 
