@@ -71,20 +71,13 @@ func main() {
 			} {
 				log.Printf(`Обновляю метрику %s типа %s`, params.ID, params.MType)
 
-				req, err := agent.GetUpdateMetricRequest(address, params)
-
-				if err != nil {
-					logger.Log.Err(err).Msgf("ошибка создания запроса обновления метрики %s: %s", params.ID, err.Error())
-				}
-
-				res, err := client.Do(req)
+				res, err := agent.SendUpdateMetricRequest(client, address, params)
 
 				if err != nil {
 					logger.Log.Error().Err(err).Msgf("ошибка обновления метрики %s: %v", params.ID, err.Error())
-				} else if res.StatusCode >= 400 {
-					logger.Log.Error().Err(err).Msgf("ошибка обновления метрики %s: %v", params.ID, res.Body)
+					continue
 				} else {
-					logger.Log.Info().Msgf("метрика %s отправлена: %v", params.ID, res.Body)
+					logger.Log.Info().Msgf("метрика %s обновлена", params.ID)
 				}
 
 				if err = res.Body.Close(); err != nil {

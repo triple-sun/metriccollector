@@ -30,16 +30,10 @@ func Gzip(next http.Handler) http.Handler {
 				return
 			}
 
-			defer func() {
-				err := cr.Close()
-				if err != nil {
-					logger.Log.Error().Err(err)
-				}
-			}()
+			defer cr.Close()
 
 			r.Body = cr
 		}
-
 
 		next.ServeHTTP(ow, r)
 	})

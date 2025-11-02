@@ -32,7 +32,9 @@ func (cw *compressWriter) Write(p []byte) (int, error) {
 }
 
 func (cw *compressWriter) WriteHeader(code int) {
-	cw.w.Header().Set("Content-Encoding", "gzip")
+	if code < 300 {
+		cw.w.Header().Set("Content-Encoding", "gzip")
+	}
 	cw.w.WriteHeader(code)
 
 	fmt.Printf("wrote header: %d", code)
