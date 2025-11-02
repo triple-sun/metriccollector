@@ -14,7 +14,7 @@ type AgentConfig struct {
 }
 
 func ParseAgentFlags(address *string, pInterval *int, rInterval *int) {
-	flag.StringVar(address, "a", "http://localhost:8080", "Адрес в формате host:port")
+	flag.StringVar(address, "a", "localhost:8080", "Адрес в формате host:port")
 	flag.IntVar(pInterval, "p", 2, "Интервал сбора метрик в секундах")
 	flag.IntVar(rInterval, "r", 10, "Интервал отправки метрик в секундах")
 	flag.Parse()

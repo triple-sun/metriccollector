@@ -21,7 +21,7 @@ func GetUpdateMetricRequest(address string, params MetricUpdateParams) (*http.Re
 	var buf bytes.Buffer
 
 	body, err := json.Marshal(model.Metrics{ID: params.ID, MType: params.MType, Delta: &params.Delta, Value: &params.Value})
-	
+
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func GetUpdateMetricRequest(address string, params MetricUpdateParams) (*http.Re
 	if err := zw.Close(); err != nil {
 		return nil, fmt.Errorf("failed to compress data: %v", err)
 	}
-	req, err := http.NewRequest("POST", address+"/update", &buf)
+	req, err := http.NewRequest("POST", "http://"+address+"/update", &buf)
 	if err != nil {
 		return nil, err
 	}
